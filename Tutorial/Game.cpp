@@ -8,7 +8,7 @@
 extern void ExitGame();
 
 using namespace DirectX;
-
+using namespace DirectX::SimpleMath;
 using Microsoft::WRL::ComPtr;
 
 Game::Game() :
@@ -70,6 +70,11 @@ void Game::Render()
     Clear();
 
     // TODO: Add your rendering code here.
+	m_spriteBatch->Begin();
+
+	m_spriteBatch->Draw(m_texture.Get(), m_screenPos, nullptr, Colors::White, 0.f, m_origin);
+
+	m_spriteBatch->End();
 
     Present();
 }
@@ -230,6 +235,20 @@ void Game::CreateDevice()
         (void)m_d3dContext.As(&m_d3dContext1);
 
     // TODO: Initialize device dependent objects here (independent of window size).
+
+	m_spriteBatch = std::make_unique<SpriteBatch>(m_d3dContext.Get());
+
+	ComPtr<ID3D11Resource> resource;
+	DX::ThrowIfFailed(CreateDDSTextureFromFile(m_d3dDevice.Get(), L"cat.dds", resource.GetAddressOf(), m_texture.ReleaseAndGetAddressOf()));
+
+	ComPtr<ID3D11Texture2D> cat;
+	DX::ThrowIfFailed(resource.As(&cat));
+
+	CD3D11_TEXTURE2D_DESC catDesc;
+	cat->GetDesc(&catDesc);
+
+	m_origin.x = float(catDesc.Width / 2);
+	m_origin.y = float(catDesc.Height / 2);
 }
 
 // Allocate all memory resources that change on a window SizeChanged event.
@@ -349,6 +368,8 @@ void Game::CreateResources()
     DX::ThrowIfFailed(m_d3dDevice->CreateDepthStencilView(depthStencil.Get(), &depthStencilViewDesc, m_depthStencilView.ReleaseAndGetAddressOf()));
 
     // TODO: Initialize windows-size dependent objects here.
+	m_screenPos.x = backBufferWidth / 2.f;
+	m_screenPos.y = backBufferHeight / 2.f;
 }
 
 void Game::OnDeviceLost()
@@ -363,6 +384,8 @@ void Game::OnDeviceLost()
     m_d3dContext.Reset();
     m_d3dDevice1.Reset();
     m_d3dDevice.Reset();
+	m_spriteBatch.reset();
+	m_texture.Reset();
 
     CreateDevice();
 
